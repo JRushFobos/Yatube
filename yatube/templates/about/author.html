@@ -1,0 +1,32 @@
+<!-- templates/about/author.html -->
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Об авторе проекта{% endblock %}
+{% block content %}
+
+<h1>
+    <img width="400" height="400" align="right"
+    src="{% static 'ava/my_image.png' %}">
+    Приветствую, <br>Я автор данного сайта Мокрушин Евгений
+</h1>
+<p>
+  Меня вдохновляет результат моей работы, нет ничего приятнее,
+  чем работающее приложение <br>
+  <div class="container py-5">
+  Мои контакты:
+  <aside class="col-12 col-md-3">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <a href="https://vk.com/eugene_mokr"> Мой VK </a>
+      </li>
+      <li class="list-group-item">
+        <a href="https://linkedin.com/in/eugene-mokr/"> Мой Linkedin </a>
+      </li>
+      <li class="list-group-item">
+        <a href="https://github.com/JRushFobos"> Мой Github </a>
+      </li>
+    </ul>
+  </aside>
+  </div>
+</p>
+{% endblock %}
