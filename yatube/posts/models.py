@@ -95,3 +95,20 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='Автор',
     )
+
+    class Meta:
+        constraints = [
+            (
+                models.UniqueConstraint(
+                    fields=['user', 'author'], name='unique_follower'
+                )
+            ),
+            (
+                models.CheckConstraint(
+                    name='restriction_of_following_yourself',
+                    check=~models.Q(user=models.F('author')),
+                )
+            ),
+        ]
+        verbose_name = 'Подписчик'
+        verbose_name = 'Подписчики'

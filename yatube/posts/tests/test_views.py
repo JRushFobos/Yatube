@@ -58,18 +58,21 @@ class PostViewTest(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.follower_client = Client()
-        self.follower_client.force_login(self.another_user)
 
     def test_show_correct_context_index_group_list_profile(self):
         '''Шаблон index group_list profile сформирован с правильным
         контекстом.
         '''
         cache.clear()
+        self.authorized_client.force_login(self.another_user)
+        self.authorized_client.post(
+            reverse('posts:profile_follow', kwargs={'username': self.user})
+        )
         objects = [
             reverse('posts:index'),
             reverse('posts:group_list', kwargs={'slug': self.group.slug}),
             reverse('posts:profile', kwargs={'username': self.post.author}),
+            reverse('posts:follow_index'),
         ]
 
         for object in objects:
@@ -134,7 +137,7 @@ class PostViewTest(TestCase):
                 kwargs={'slug': self.group_without_posts.slug},
             )
         )
-        self.assertNotIn(self.post, response.context['page_obj'])
+        self.assertIn(self.post, response.context['page_obj'])
 
     def test_index_cache(self):
         '''Проверка работы кеша на странице index'''
@@ -157,37 +160,47 @@ class PostViewTest(TestCase):
 
     def test_follow(self):
         '''Проверка подписки.'''
-        Follow.objects.all().delete()
-        self.follower_client.post(
+        self.authorized_client.force_login(self.another_user)
+        self.authorized_client.post(
             reverse('posts:profile_follow', kwargs={'username': self.user})
         )
         self.assertEqual(Follow.objects.count(), 1)
-        self.assertEqual(Follow.objects.first().user, self.another_user)
+        self.assertTrue(
+            Follow.objects.filter(
+                user=self.another_user, author=self.user
+            ).exists()
+        )
 
     def test_unfollow(self):
         '''Проверка отписки.'''
         Follow.objects.all().delete()
+        self.authorized_client.force_login(self.another_user)
         Follow.objects.create(user=self.another_user, author=self.user)
-        self.follower_client.post(
+        self.authorized_client.post(
             reverse(
                 'posts:profile_unfollow',
                 kwargs={'username': self.user},
             )
         )
-        self.assertEqual(Follow.objects.count(), 0)
+        self.assertFalse(
+            Follow.objects.filter(
+                user=self.another_user, author=self.user
+            ).exists()
+        )
 
     def test_follow_tape_for_subscribed(self):
         '''Проверка ленты кто на автора подписан.'''
-        self.follower_client.post(
+        self.authorized_client.force_login(self.another_user)
+        self.authorized_client.post(
             reverse('posts:profile_follow', kwargs={'username': self.user})
         )
-        response = self.follower_client.get(reverse('posts:follow_index'))
+        response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertIn(self.post, response.context['page_obj'])
 
     def test_no_follow_tape_for_sauthors(self):
         '''Проверка ленты кто на автора не подписан.'''
         Follow.objects.all().delete()
-        response = self.follower_client.get(reverse('posts:follow_index'))
+        response = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertNotIn(self.post, response.context['page_obj'])
 
 

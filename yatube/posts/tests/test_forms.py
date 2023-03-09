@@ -82,7 +82,7 @@ class TestCreateForm(TestCase):
         self.assertEqual(object.text, form_data['text'])
         self.assertEqual(object.group.id, form_data['group'])
         self.assertEqual(object.author, self.post.author)
-        self.assertEqual(object.image.name, 'posts/small.gif')
+        self.assertEqual(object.image.name, f'posts/{uploaded}')
 
     def test_form_update(self):
         '''Проверка редактирования поста через форму на странице.'''
@@ -121,6 +121,8 @@ class TestCreateForm(TestCase):
         self.assertEqual(Comment.objects.count(), 1)
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.author)
+        self.assertEqual(comment.post_id, post.id)
+        self.assertEqual(comment.post, post)
         self.assertRedirects(
             response, reverse('posts:post_detail', args=[post.id])
         )

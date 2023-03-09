@@ -3,7 +3,6 @@ from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post, User
@@ -11,16 +10,14 @@ from .models import Follow, Group, Post, User
 User = get_user_model()
 
 
-def paginator(request, post_list):
+def paginator(page_number, post_list):
     paginator = Paginator(post_list, settings.NUM_POSTS)
-    page_number = request.GET.get('page')
     return paginator.get_page(page_number)
 
 
-@cache_page(20 * 15)
 def index(request):
-    post_list = Post.objects.select_related('group')
-    page_obj = paginator(request, post_list)
+    post_list = Post.objects.select_related('group', 'author')
+    page_obj = paginator(request.GET.get('page'), post_list)
     context = {
         'page_obj': page_obj,
     }
@@ -29,32 +26,32 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = Post.objects.filter(group=group)
-    paginator = Paginator(posts, settings.NUM_POSTS)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    post_list = Post.objects.select_related('group', 'author')
+    page_obj = paginator(request.GET.get('page'), post_list)
     context = {'group': group, 'page_obj': page_obj}
     return render(request, 'posts/group_list.html', context)
 
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = Post.objects.select_related('author').filter(author=author)
-    page_obj = paginator(request, post_list)
-    following = request.user.is_authenticated
-    if following:
-        following = author.following.filter(user=request.user).exists()
+    post_list = author.posts.select_related('author')
+    page_obj = paginator(request.GET.get('page'), post_list)
+    following = (
+        request.user.is_authenticated
+        and request.user.follower.filter(author=author).exists()
+    )
     context = {'page_obj': page_obj, 'author': author, 'following': following}
     return render(request, 'posts/profile.html', context)
 
 
 def post_detail(request, post_id):
-    post = get_object_or_404(Post.objects.select_related('author'), pk=post_id)
-    form = CommentForm()
-    comments = post.comments.all()
+    post = get_object_or_404(
+        Post.objects.select_related('group', 'author'), pk=post_id
+    )
+    comments = post.comments.select_related('author')
     context = {
         'post': post,
-        'form': form,
+        'form': CommentForm(),
         'comments': comments,
     }
     return render(request, 'posts/post_detail.html', context)
@@ -77,7 +74,7 @@ def post_create(request):
 @login_required
 def post_edit(request, post_id):
     edit_post = get_object_or_404(
-        Post.objects.select_related('author'), id=post_id
+        Post.objects.select_related('author', 'group'), id=post_id
     )
     if request.user != edit_post.author:
         return redirect('posts:post_detail', post_id)

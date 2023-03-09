@@ -118,6 +118,11 @@ class PostUrlTest(TestCase):
                 HTTPStatus.OK,
                 self.authorized_client,
             ),
+            (
+                reverse('posts:follow_index'),
+                HTTPStatus.OK,
+                self.authorized_client,
+            ),
             ('/unexisting_page', HTTPStatus.NOT_FOUND, self.guest_client),
         ]
 
@@ -155,6 +160,10 @@ class PostUrlTest(TestCase):
                 'users/password_reset_form.html',
             ),
             (
+                reverse('posts:follow_index'),
+                'posts/follow.html',
+            ),
+            (
                 '/unexisting_page',
                 'core/404.html',
             ),
@@ -185,6 +194,14 @@ class PostUrlTest(TestCase):
             (
                 f'/posts/{self.post.id}/edit/',
                 reverse('posts:post_edit', args=[self.post.id]),
+            ),
+            (
+                f'/posts/{self.post.id}/edit/',
+                reverse('posts:post_edit', args=[self.post.id]),
+            ),
+            (
+                '/follow/',
+                reverse('posts:follow_index'),
             ),
         ]
         for address, name in templates_address_names:
