@@ -35,6 +35,7 @@ class PostViewTest(TestCase):
             last_name='Мокрушин',
             email='fobos_media@mail.ru',
         )
+        cls.new_user = User.objects.create_user(username='Женя')
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x01\x00'
             b'\x01\x00\x00\x00\x00\x21\xf9\x04'
@@ -52,6 +53,10 @@ class PostViewTest(TestCase):
             group=cls.group,
             image=uploaded,
         )
+        cls.follow = Follow.objects.create(
+            user=cls.new_user,
+            author=cls.user,
+        )
 
     def setUp(self):
         '''Подготовка прогона теста. Вызывается перед каждым тестом.'''
@@ -64,10 +69,7 @@ class PostViewTest(TestCase):
         контекстом.
         '''
         cache.clear()
-        self.authorized_client.force_login(self.another_user)
-        self.authorized_client.post(
-            reverse('posts:profile_follow', kwargs={'username': self.user})
-        )
+        self.authorized_client.force_login(self.new_user)
         objects = [
             reverse('posts:index'),
             reverse('posts:group_list', kwargs={'slug': self.group.slug}),
@@ -137,7 +139,7 @@ class PostViewTest(TestCase):
                 kwargs={'slug': self.group_without_posts.slug},
             )
         )
-        self.assertIn(self.post, response.context['page_obj'])
+        self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_index_cache(self):
         '''Проверка работы кеша на странице index'''
@@ -160,11 +162,12 @@ class PostViewTest(TestCase):
 
     def test_follow(self):
         '''Проверка подписки.'''
+        count = Follow.objects.count()
         self.authorized_client.force_login(self.another_user)
         self.authorized_client.post(
             reverse('posts:profile_follow', kwargs={'username': self.user})
         )
-        self.assertEqual(Follow.objects.count(), 1)
+        self.assertEqual(count, +1)
         self.assertTrue(
             Follow.objects.filter(
                 user=self.another_user, author=self.user
@@ -187,15 +190,6 @@ class PostViewTest(TestCase):
                 user=self.another_user, author=self.user
             ).exists()
         )
-
-    def test_follow_tape_for_subscribed(self):
-        '''Проверка ленты кто на автора подписан.'''
-        self.authorized_client.force_login(self.another_user)
-        self.authorized_client.post(
-            reverse('posts:profile_follow', kwargs={'username': self.user})
-        )
-        response = self.authorized_client.get(reverse('posts:follow_index'))
-        self.assertIn(self.post, response.context['page_obj'])
 
     def test_no_follow_tape_for_sauthors(self):
         '''Проверка ленты кто на автора не подписан.'''

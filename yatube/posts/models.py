@@ -105,10 +105,10 @@ class Follow(models.Model):
             ),
             (
                 models.CheckConstraint(
+                    # имя констрейна
                     name='restriction_of_following_yourself',
+                    # ~ отрицание | Q условие | F - field (author)
                     check=~models.Q(user=models.F('author')),
                 )
             ),
         ]
-        verbose_name = 'Подписчик'
-        verbose_name = 'Подписчики'

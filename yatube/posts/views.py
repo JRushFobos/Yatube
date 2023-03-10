@@ -26,7 +26,7 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    post_list = Post.objects.select_related('group', 'author')
+    post_list = group.posts.select_related('author')
     page_obj = paginator(request.GET.get('page'), post_list)
     context = {'group': group, 'page_obj': page_obj}
     return render(request, 'posts/group_list.html', context)
@@ -34,7 +34,7 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = author.posts.select_related('author')
+    post_list = author.posts.select_related('group')
     page_obj = paginator(request.GET.get('page'), post_list)
     following = (
         request.user.is_authenticated
@@ -106,9 +106,8 @@ def follow_index(request):
     posts = Post.objects.filter(
         author__following__user=request.user
     ).select_related('author', 'group')
-    paginator = Paginator(posts, settings.NUM_POSTS)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator(request, posts)
+    (request, posts)
     context = {'page_obj': page_obj}
     return render(request, 'posts/follow.html', context)
 

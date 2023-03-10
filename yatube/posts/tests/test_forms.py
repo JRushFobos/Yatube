@@ -121,7 +121,6 @@ class TestCreateForm(TestCase):
         self.assertEqual(Comment.objects.count(), 1)
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.author, self.author)
-        self.assertEqual(comment.post_id, post.id)
         self.assertEqual(comment.post, post)
         self.assertRedirects(
             response, reverse('posts:post_detail', args=[post.id])
