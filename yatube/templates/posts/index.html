@@ -5,13 +5,12 @@
   Последние обновления на сайте
 {% endblock %}
 {% block content %}
-
 <h1>Последние обновления на сайте</h1>
 {% include 'posts/includes/switcher.html' %}
-{% cache 20 index_page %}
+{% cache 20 sidebar page_obj.number %}
   {% for post in page_obj %}
-  {% include 'includes/post.html' with profile=True group_list=True  %}
+    {% include 'includes/post.html' with profile=True group_list=True  %}
   {% endfor %}
-  {% endcache %}
-  {% include 'posts/includes/paginator.html' %}
+{% endcache %}
+{% include 'posts/includes/paginator.html' %}
 {% endblock %}
